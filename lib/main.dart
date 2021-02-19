@@ -2,10 +2,15 @@ import 'package:flutter/foundation.dart';
 import 'package:flutter/material.dart';
 import 'package:font_awesome_flutter/font_awesome_flutter.dart';
 import 'NewPage.dart';
+import 'package:table_calendar/table_calendar.dart';
+import 'package:shared_preferences/shared_preferences.dart';
+import 'dart:convert';
+
+
 
 
 void main() {
-  runApp(MyApp());
+ runApp(MyApp());
 }
 
 class MyApp extends StatelessWidget {
@@ -15,7 +20,7 @@ class MyApp extends StatelessWidget {
     return MaterialApp(
       debugShowCheckedModeBanner: false,
       theme: ThemeData(
-          fontFamily: 'Avenir'
+
       ),
       home: MyHomePage(),
       routes: {
@@ -114,8 +119,21 @@ class _MyHomePageState extends  State<MyHomePage>{
                     children: <Widget> [
                       Column(
                         children: <Widget> [
-                          FaIcon(FontAwesomeIcons.calendar),
-                          Text('Takvim')
+                          IconButton(
+                              icon: Icon(
+                                FontAwesomeIcons.calendar,
+                                color: Colors.black,
+                              ),
+                              onPressed: (){
+                                Navigator
+                                .push(context, MaterialPageRoute(
+                                    builder: (context)=>takvimpage()
+                                ),
+                                );
+                              }
+                          ),
+
+                          Text('Takvim'),
                         ],
                       ),
                       Column(
@@ -192,9 +210,133 @@ class _MyHomePageState extends  State<MyHomePage>{
       ),
 
     );
+
   }
+
   void openPage(String img, String title)
   {
   Navigator.pushNamed(context, '/NewPage',arguments: {'image': '$img', 'title':'$title'});
   }
+
+  }
+
+
+class takvimpage extends StatefulWidget {
+  @override
+  _takvimpageState createState() => _takvimpageState();
 }
+
+class _takvimpageState extends State<takvimpage> {
+  CalendarController _controller;
+  Map<DateTime,List<dynamic>> _events;
+  @override
+  void initState() {
+    // TODO: implement initState
+    super.initState();
+    _controller = CalendarController();
+    _events = {};
+
+  }
+  Map<String, dynamic> encodeMap(Map<DateTime, dynamic> map) {
+    Map<String, dynamic> newMap = {};
+    map.forEach((key, value) {
+      newMap[key.toString()] = map[key];
+    });
+    return newMap;
+  }
+
+  Map<DateTime, dynamic> decodeMap(Map<String, dynamic> map) {
+    Map<DateTime, dynamic> newMap = {};
+    map.forEach((key, value) {
+      newMap[DateTime.parse(key)] = map[key];
+    });
+    return newMap;
+  }
+  @override
+  Widget build(BuildContext context) {
+    return Scaffold(
+      appBar: AppBar(
+        title: Text('Takvim'),
+        backgroundColor: Color(0xffc7b8f5),
+
+      ),
+      body: SingleChildScrollView(
+
+        child:Column(
+          crossAxisAlignment: CrossAxisAlignment.start,
+          children: <Widget> [
+            TableCalendar(
+              events: _events,
+                calendarStyle: CalendarStyle(
+                  todayColor: Color(0xffc7b8f5),
+                  selectedColor: Theme.of(context).primaryColor,
+                  todayStyle: TextStyle(
+                    fontWeight: FontWeight.bold,
+                    fontSize: 18.0,
+                    color:Colors.orange,
+
+                  )
+                ),
+                headerStyle: HeaderStyle(
+                  centerHeaderTitle: true,
+                  formatButtonDecoration: BoxDecoration(
+                    color: Color(0xffc7b8f5),
+                    borderRadius: BorderRadius.circular(20.0),
+
+                  ),
+                  formatButtonTextStyle: TextStyle(
+                    color:Colors.white,
+
+                  ),
+                  formatButtonShowsNext: false,
+
+                ),
+                startingDayOfWeek: StartingDayOfWeek.monday,
+                builders: CalendarBuilders(
+                  selectedDayBuilder: (context, date,events) =>
+                      Container(
+                        margin: const EdgeInsets.all(4.0),
+                        alignment: Alignment.center,
+
+                        decoration: BoxDecoration(
+                          color: Theme.of(context).primaryColor,
+                          shape: BoxShape.circle,
+
+                        ),
+                        child: Text(date.day.toString(), style: TextStyle(color:Colors.white),),
+                      ),
+
+                ),
+                calendarController: _controller ),
+          ],
+        )
+      ),
+      floatingActionButton: FloatingActionButton(
+        child: Icon(Icons.add),
+        onPressed: (){
+
+        }
+      )
+    );
+  }
+  _showAddDialog(){
+    showDialog(
+      context: context,
+      builder: (context) => AlertDialog(
+        content: TextField(
+        ),
+        actions: <Widget>[
+          FlatButton(
+            child: Text("Kaydet"),
+            onPressed: () {
+
+            },
+          )
+        ]
+      ),
+
+    );
+  }
+
+}
+

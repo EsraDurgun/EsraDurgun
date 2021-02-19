@@ -1,4 +1,9 @@
 import 'package:flutter/material.dart';
+import 'package:youtube_player_flutter/youtube_player_flutter.dart';
+
+
+
+
 class NewPage extends StatefulWidget {
   @override
   _NewPageState createState() => _NewPageState();
@@ -232,10 +237,19 @@ class _NewPageState extends State<NewPage> {
       ),
       child: Row(
         children: <Widget> [
-          Icon(
+          IconButton(
+            onPressed: (){
+              Navigator
+                  .push(context, MaterialPageRoute(
+                  builder: (context) => videopage()
+              )
+              );
+            },
+          icon:Icon(
               (activeornot == true) ? Icons.play_circle_filled : Icons.play_circle_outline,
             color: Color(0xff817dc0),
             size: 50,
+          ),
           ),
           SizedBox(width: 10,),
           Text('$title', style: TextStyle(
@@ -247,3 +261,37 @@ class _NewPageState extends State<NewPage> {
     );
   }
 }
+class videopage extends StatelessWidget {
+YoutubePlayerController _controller=YoutubePlayerController(
+  initialVideoId: 'U9YKY7fdwyg&ab_channel=Goodful',
+  flags: YoutubePlayerFlags(
+    autoPlay: true,
+    mute: false,
+
+  )
+);
+  @override
+  Widget build(BuildContext context) {
+    return Scaffold(
+
+      backgroundColor: Color(0xfff5ceb8),
+      appBar: AppBar(
+      backgroundColor: Color(0xffc7b8f5),
+
+      ),
+      body: Center(
+        child: Column(
+          children: <Widget>[
+            YoutubePlayer(controller: _controller,
+            showVideoProgressIndicator: true,
+            )
+          ],
+        ),
+      ),
+
+      );
+
+
+  }
+}
+
