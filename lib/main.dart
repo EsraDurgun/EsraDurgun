@@ -148,10 +148,20 @@ class _MyHomePageState extends  State<MyHomePage>{
                       ),
                       Column(
                         children: <Widget> [
-                          Icon(Icons.settings),
-                          Text('Ayarlar')
+                          IconButton(
+                          icon: Icon(Icons.settings, color:Colors.black,
+                          ),
+                            onPressed: (){
+                            Navigator
+                            .push(context,MaterialPageRoute(builder: (context) => ayarlarpage()
+                            ),
+                            );
+                            },
+                          ),
+                          Text('Ayarlar'),
                         ],
-                      ),
+                        ),
+
                     ],
                   )
                 )
@@ -228,15 +238,29 @@ class takvimpage extends StatefulWidget {
 
 class _takvimpageState extends State<takvimpage> {
   CalendarController _controller;
-  Map<DateTime,List<dynamic>> _events;
+  Map<DateTime, List<dynamic>> _events;
+  List<dynamic> _selectedEvents;
+  TextEditingController _eventController;
+  SharedPreferences prefs;
+
   @override
   void initState() {
-    // TODO: implement initState
     super.initState();
     _controller = CalendarController();
+    _eventController = TextEditingController();
     _events = {};
-
+    _selectedEvents = [];
+    initPrefs();
   }
+
+  initPrefs() async {
+    prefs = await SharedPreferences.getInstance();
+    setState(() {
+      _events = Map<DateTime, List<dynamic>>.from(
+          decodeMap(json.decode(prefs.getString("events") ?? "{}")));
+    });
+  }
+
   Map<String, dynamic> encodeMap(Map<DateTime, dynamic> map) {
     Map<String, dynamic> newMap = {};
     map.forEach((key, value) {
@@ -252,91 +276,199 @@ class _takvimpageState extends State<takvimpage> {
     });
     return newMap;
   }
+
   @override
   Widget build(BuildContext context) {
     return Scaffold(
       appBar: AppBar(
         title: Text('Takvim'),
-        backgroundColor: Color(0xffc7b8f5),
-
+        backgroundColor: Colors.blueGrey,
       ),
       body: SingleChildScrollView(
-
-        child:Column(
+        child: Column(
           crossAxisAlignment: CrossAxisAlignment.start,
-          children: <Widget> [
+          children: <Widget>[
             TableCalendar(
               events: _events,
-                calendarStyle: CalendarStyle(
-                  todayColor: Color(0xffc7b8f5),
+              initialCalendarFormat: CalendarFormat.week,
+              calendarStyle: CalendarStyle(
+                  canEventMarkersOverflow: true,
+                  todayColor: Colors.orange,
                   selectedColor: Theme.of(context).primaryColor,
                   todayStyle: TextStyle(
-                    fontWeight: FontWeight.bold,
-                    fontSize: 18.0,
-                    color:Colors.orange,
-
-                  )
+                      fontWeight: FontWeight.bold,
+                      fontSize: 18.0,
+                      color: Colors.white)),
+              headerStyle: HeaderStyle(
+                centerHeaderTitle: true,
+                formatButtonDecoration: BoxDecoration(
+                  color: Colors.orange,
+                  borderRadius: BorderRadius.circular(20.0),
                 ),
-                headerStyle: HeaderStyle(
-                  centerHeaderTitle: true,
-                  formatButtonDecoration: BoxDecoration(
-                    color: Color(0xffc7b8f5),
-                    borderRadius: BorderRadius.circular(20.0),
+                formatButtonTextStyle: TextStyle(color: Colors.white),
+                formatButtonShowsNext: false,
+              ),
+              startingDayOfWeek: StartingDayOfWeek.monday,
 
-                  ),
-                  formatButtonTextStyle: TextStyle(
-                    color:Colors.white,
-
-                  ),
-                  formatButtonShowsNext: false,
-
-                ),
-                startingDayOfWeek: StartingDayOfWeek.monday,
-                builders: CalendarBuilders(
-                  selectedDayBuilder: (context, date,events) =>
-                      Container(
-                        margin: const EdgeInsets.all(4.0),
-                        alignment: Alignment.center,
-
-                        decoration: BoxDecoration(
-                          color: Theme.of(context).primaryColor,
-                          shape: BoxShape.circle,
-
-                        ),
-                        child: Text(date.day.toString(), style: TextStyle(color:Colors.white),),
-                      ),
-
-                ),
-                calendarController: _controller ),
+              builders: CalendarBuilders(
+                selectedDayBuilder: (context, date, events) => Container(
+                    margin: const EdgeInsets.all(4.0),
+                    alignment: Alignment.center,
+                    decoration: BoxDecoration(
+                        color: Theme.of(context).primaryColor,
+                        borderRadius: BorderRadius.circular(10.0)),
+                    child: Text(
+                      date.day.toString(),
+                      style: TextStyle(color: Colors.white),
+                    )),
+                todayDayBuilder: (context, date, events) => Container(
+                    margin: const EdgeInsets.all(4.0),
+                    alignment: Alignment.center,
+                    decoration: BoxDecoration(
+                        color: Colors.orange,
+                        borderRadius: BorderRadius.circular(10.0)),
+                    child: Text(
+                      date.day.toString(),
+                      style: TextStyle(color: Colors.white),
+                    )),
+              ),
+              calendarController: _controller,
+            ),
+            ..._selectedEvents.map((event) => ListTile(
+              title: Text(event),
+            )),
           ],
-        )
+        ),
       ),
       floatingActionButton: FloatingActionButton(
         child: Icon(Icons.add),
-        onPressed: (){
+        onPressed: _showAddDialog,
+      ),
+    );
+  }
 
-        }
+  _showAddDialog() async {
+    await showDialog(
+        context: context,
+        builder: (context) => AlertDialog(
+          content: TextField(
+            controller: _eventController,
+          ),
+          actions: <Widget>[
+            FlatButton(
+              child: Text("Save"),
+              onPressed: () {
+                if (_eventController.text.isEmpty) return;
+                if (_events[_controller.selectedDay] != null) {
+                  _events[_controller.selectedDay]
+                      .add(_eventController.text);
+                } else {
+                  _events[_controller.selectedDay] = [
+                    _eventController.text
+                  ];
+                }
+                prefs.setString("events", json.encode(encodeMap(_events)));
+                _eventController.clear();
+                Navigator.pop(context);
+              },
+            )
+          ],
+        ));
+    setState(() {
+      _selectedEvents = _events[_controller.selectedDay];
+    });
+    
+  }
+  
+}
+class ayarlarpage extends StatelessWidget {
+  @override
+  Widget build(BuildContext context) {
+    return Scaffold(
+      appBar: AppBar(
+        elevation: 0,
+        brightness: Brightness.light,
+        iconTheme: IconThemeData(color: Colors.black),
+        backgroundColor: Colors.grey,
+
+        title: Text('Ayarlar', style: TextStyle(color: Colors.white),),
+      ),
+      body: SingleChildScrollView(
+        padding: const EdgeInsets.all(16.0),
+        child: Column(
+          crossAxisAlignment: CrossAxisAlignment.start,
+          children: <Widget> [
+            Card(
+              elevation: 8.0,
+              shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(10.0)),
+
+              child: ListTile(
+
+                title: Text("Esra Durgun", style: TextStyle(color: Colors.black, fontWeight: FontWeight.w500,)),
+                leading: CircleAvatar(
+                 backgroundColor: Colors.blueGrey,
+                ),
+                trailing: Icon(Icons.edit, color:Colors.black,),
+              )
+            ),
+            const SizedBox(height: 10.0),
+            Card(
+              elevation: 4.0,
+              margin: const EdgeInsets.fromLTRB(32.0, 8.0, 32.0, 16.0),
+              shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(10.0)),
+              child: Column(
+                children: <Widget> [
+                  ListTile(
+                    leading: Icon(Icons.lock_outline, color: Colors.purple,),
+                    title: Text("Şifreni değiştir"),
+                    trailing: Icon(Icons.keyboard_arrow_right),
+                  ),
+                  const Divider(),
+                  Container(
+                    margin: const EdgeInsets.symmetric(horizontal: 8.0, ),
+                    width: double.infinity,
+                    height: 1.0,
+                    color: Colors.grey.shade300,
+
+                  ),
+                  const Divider(),
+                  ListTile(
+                    leading: Icon(FontAwesomeIcons.language, color: Colors.purple,),
+                    title: Text("Uygulama Dilini Değiştir"),
+                    trailing: Icon(Icons.keyboard_arrow_right),
+                  )
+                ]
+              ),
+            ),
+            const SizedBox(height: 10.0,),
+            Text("Diğer Ayarlar", style: TextStyle(
+              fontSize: 20.0,
+              fontWeight: FontWeight.bold,
+              color: Colors.deepPurpleAccent,
+            ),),
+            SwitchListTile(
+              activeColor: Colors.purple,
+                value: true,
+                title: Text("Bildirimler"),
+                onChanged: (val){},
+            ),
+            SwitchListTile(
+              activeColor: Colors.purple,
+              value: false,
+              title: Text("Gece Modu"),
+              onChanged: (val){},
+            ),
+            SwitchListTile(
+              activeColor: Colors.purple,
+              value: true,
+              title: Text("Uygulama Sesleri"),
+              onChanged: (val){},
+            )
+          ],
+        ),
       )
     );
   }
-  _showAddDialog(){
-    showDialog(
-      context: context,
-      builder: (context) => AlertDialog(
-        content: TextField(
-        ),
-        actions: <Widget>[
-          FlatButton(
-            child: Text("Kaydet"),
-            onPressed: () {
-
-            },
-          )
-        ]
-      ),
-
-    );
-  }
-
 }
+
 
